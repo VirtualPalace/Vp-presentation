@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VirtualPalace — Simulateur de jauge</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #E8E0D0; color: #0B2A3C; padding: 2rem; }
+
+  h1 { font-size: 22px; font-weight: bold; color: #0B2A3C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #8AAABB; margin-bottom: 1.5rem; }
+
+  /* TOTAUX */
+  .totaux { background: #0B2A3C; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .tot-item .tot-label { font-size: 11px; color: #8AAABB; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .tot-item .tot-val { font-size: 26px; font-weight: bold; }
+  .tot-item .tot-val.gold  { color: #F0B429; }
+  .tot-item .tot-val.pct   { color: #FFFFFF; }
+  .tot-item .tot-val.blue  { color: #2FA4D9; }
+  .tot-item .tot-val.green { color: #7DC247; }
+
+  /* BARRE DE PROGRESSION GLOBALE */
+  .progress-wrap { background: #1E4F6E; border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .progress-label { font-size: 11px; color: #8AAABB; margin-bottom: 8px; letter-spacing: 0.04em; }
+  .progress-bar { height: 8px; background: #0B2A3C; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 8px; border-radius: 4px; background: #F0B429; transition: width 0.3s; }
+
+  /* GRILLE SALLES */
+  .salles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+
+  .salle-card { background: #FFFFFF; border-radius: 10px; padding: 1rem 1.25rem; border-left: 4px solid #ccc; }
+  .salle-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
+  .salle-nom { font-size: 13px; font-weight: bold; color: #0B2A3C; }
+  .salle-loc { font-size: 11px; color: #8AAABB; margin-bottom: 10px; }
+  .salle-places { font-size: 11px; color: #555; }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .slider-row input[type=range] { flex: 1; height: 4px; accent-color: #185FA5; cursor: pointer; }
+  .slider-pct { font-size: 14px; font-weight: bold; width: 42px; text-align: right; }
+
+  .pct-bar-wrap { height: 4px; background: #E8E0D0; border-radius: 2px; margin-bottom: 10px; }
+  .pct-bar-fill { height: 4px; border-radius: 2px; transition: width 0.2s; }
+
+  .salle-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding-top: 8px; border-top: 1px solid #E8E0D0; }
+  .stat-item .stat-label { font-size: 10px; color: #8AAABB; margin-bottom: 2px; }
+  .stat-item .stat-val { font-size: 14px; font-weight: bold; }
+  .stat-item .stat-val.btob  { color: #185FA5; }
+  .stat-item .stat-val.btoc  { color: #3B6D11; }
+  .stat-item .stat-val.total { color: #0B2A3C; }
+  .stat-item .stat-val.pl    { color: #C9A84C; }
+
+  /* TABLEAU SCÉNARIOS */
+  .scenarios { background: #FFFFFF; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .scenarios h3 { font-size: 13px; font-weight: bold; color: #0B2A3C; margin-bottom: 10px; letter-spacing: 0.05em; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: #0B2A3C; }
+  thead th { color: #2FA4D9; font-size: 10px; letter-spacing: 0.08em; padding: 6px 10px; text-align: right; }
+  thead th:first-child { text-align: left; }
+  tbody tr { border-bottom: 1px solid #E8E0D0; }
+  tbody tr.highlight { background: #E6F1FB; }
+  tbody tr.current { background: #FAEEDA; font-weight: bold; }
+  tbody td { padding: 6px 10px; text-align: right; color: #0B2A3C; }
+  tbody td:first-child { text-align: left; font-weight: bold; }
+  tbody tr:last-child { background: #0B2A3C; }
+  tbody tr:last-child td { color: #F0B429; font-weight: bold; }
+  tbody tr:last-child td:first-child { color: #FFFFFF; }
+
+  .note { font-size: 11px; color: #8AAABB; text-align: center; margin-top: 0.5rem; }
+  .reset-btn { display: block; margin: 0 auto 1rem; padding: 8px 24px; background: #185FA5; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .reset-btn:hover { background: #0C447C; }
+
+  /* HEADER VP */
+  .vp-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 0.25rem; }
+  .vp-tag { font-size: 10px; color: #C9A84C; letter-spacing: 0.1em; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="vp-header">
+  <h1>Simulateur de jauge</h1>
+  <span class="vp-tag">VIRTUALPALACE · CHAPITRE II</span>
+</div>
+<p class="subtitle">Ajustez le taux de remplissage par salle · Jauge 100% = capacité théorique maximale · Passages annuels recalculés en temps réel</p>
+
+<!-- TOTAUX -->
+<div class="totaux">
+  <div class="tot-item">
+    <div class="tot-label">PASSAGES TOTAUX / AN</div>
+    <div class="tot-val gold" id="tot-passages">76 922</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">VS JAUGE 100%</div>
+    <div class="tot-val pct" id="tot-pct">100%</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">BTOB TOTAL</div>
+    <div class="tot-val blue" id="tot-btob">37 492</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">BTOC TOTAL</div>
+    <div class="tot-val green" id="tot-btoc">39 430</div>
+  </div>
+</div>
+
+<!-- BARRE GLOBALE -->
+<div class="progress-wrap">
+  <div class="progress-label">TAUX DE REMPLISSAGE GLOBAL</div>
+  <div class="progress-bar"><div class="progress-fill" id="global-bar" style="width:100%"></div></div>
+</div>
+
+<!-- SALLES -->
+<div class="salles-grid" id="salles-grid"></div>
+
+<button class="reset-btn" onclick="resetAll()">Réinitialiser à 100%</button>
+
+<!-- TABLEAU SCÉNARIOS -->
+<div class="scenarios">
+  <h3>SCÉNARIOS DE RÉFÉRENCE · JAUGE 100%</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Scénario</th>
+        <th>Jauge</th>
+        <th>Passages / an</th>
+        <th>BtoB</th>
+        <th>BtoC</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Pessimiste</td><td>20%</td><td>15 384</td><td>7 498</td><td>7 886</td></tr>
+      <tr><td>Bas</td><td>40%</td><td>30 769</td><td>14 997</td><td>15 772</td></tr>
+      <tr><td>Réaliste</td><td>60%</td><td>46 153</td><td>22 495</td><td>23 658</td></tr>
+      <tr><td>Cible</td><td>80%</td><td>61 538</td><td>29 994</td><td>31 544</td></tr>
+      <tr><td>JAUGE 100%</td><td>100%</td><td>76 922</td><td>37 492</td><td>39 430</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p class="note">VirtualPalace · Maison du Cinéma et des Nouvelles Images · Rue Royale 290 · 1210 Saint-Josse · Bruxelles · Version mai 2026</p>
+
+<script>
+const SALLES = [
+  { id:'dcp',     nom:'Rétine DCP Cinéma',        loc:'Écurie · R+1',           pl:30, btob100:10380, btoc100:10950, color:'#185FA5' },
+  { id:'gaumont', nom:'Rétine Héritage Gaumont',   loc:'Hôtel de Maître · R+2',  pl:14, btob100:4844,  btoc100:5110,  color:'#7A5A1E' },
+  { id:'stream',  nom:'Rétine Streaming',           loc:'Hôtel de Maître · R+2',  pl:36, btob100:12456, btoc100:13140, color:'#3B6D11' },
+  { id:'vr1',     nom:'Rétine VR 360° — Salle 01', loc:'Hôtel de Maître · R+1',  pl:10, btob100:3460,  btoc100:3650,  color:'#1E4F6E' },
+  { id:'vr2',     nom:'Rétine VR 360° — Salle 02', loc:'Hôtel de Maître · R+1',  pl:12, btob100:4152,  btoc100:4380,  color:'#1E4F6E' },
+  { id:'drive',   nom:'Drive-Vigne · Clos',         loc:'Cour intérieure · Été',  pl:40, btob100:2200,  btoc100:2200,  color:'#3B6D11' },
+];
+
+const state = {};
+SALLES.forEach(s => state[s.id] = 100);
+
+const grid = document.getElementById('salles-grid');
+
+SALLES.forEach(salle => {
+  const card = document.createElement('div');
+  card.className = 'salle-card';
+  card.style.borderLeftColor = salle.color;
+  card.innerHTML = `
+    <div class="salle-header">
+      <span class="salle-nom">${salle.nom}</span>
+      <span class="salle-places">${salle.pl} pl. max</span>
+    </div>
+    <div class="salle-loc">${salle.loc}</div>
+    <div class="slider-row">
+      <span style="font-size:11px;color:#8AAABB;width:38px">jauge</span>
+      <input type="range" min="0" max="100" step="5" value="100" id="sl-${salle.id}" />
+      <span class="slider-pct" id="pct-${salle.id}" style="color:${salle.color}">100%</span>
+    </div>
+    <div class="pct-bar-wrap">
+      <div class="pct-bar-fill" id="bar-${salle.id}" style="width:100%;background:${salle.color}"></div>
+    </div>
+    <div class="salle-stats">
+      <div class="stat-item"><div class="stat-label">BtoB</div><div class="stat-val btob" id="btob-${salle.id}">${fmt(salle.btob100)}</div></div>
+      <div class="stat-item"><div class="stat-label">BtoC</div><div class="stat-val btoc" id="btoc-${salle.id}">${fmt(salle.btoc100)}</div></div>
+      <div class="stat-item"><div class="stat-label">Total</div><div class="stat-val total" id="tot-${salle.id}">${fmt(salle.btob100+salle.btoc100)}</div></div>
+      <div class="stat-item"><div class="stat-label">Places eff.</div><div class="stat-val pl" id="pl-${salle.id}">${salle.pl}</div></div>
+    </div>
+  `;
+  grid.appendChild(card);
+
+  document.getElementById(`sl-${salle.id}`).addEventListener('input', function() {
+    state[salle.id] = parseInt(this.value);
+    updateSalle(salle);
+    updateTotals();
+  });
+});
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('fr-FR');
+}
+
+function updateSalle(salle) {
+  const p = state[salle.id] / 100;
+  const btob = Math.round(salle.btob100 * p);
+  const btoc  = Math.round(salle.btoc100 * p);
+  const pl    = Math.round(salle.pl * p);
+  document.getElementById(`pct-${salle.id}`).textContent  = state[salle.id] + '%';
+  document.getElementById(`bar-${salle.id}`).style.width   = state[salle.id] + '%';
+  document.getElementById(`btob-${salle.id}`).textContent  = fmt(btob);
+  document.getElementById(`btoc-${salle.id}`).textContent  = fmt(btoc);
+  document.getElementById(`tot-${salle.id}`).textContent   = fmt(btob + btoc);
+  document.getElementById(`pl-${salle.id}`).textContent    = pl + ' pl.';
+}
+
+function updateTotals() {
+  let tBtob = 0, tBtoc = 0;
+  SALLES.forEach(s => {
+    tBtob += Math.round(s.btob100 * state[s.id] / 100);
+    tBtoc += Math.round(s.btoc100 * state[s.id] / 100);
+  });
+  const tot = tBtob + tBtoc;
+  const pct = Math.round(tot / 76922 * 100);
+  document.getElementById('tot-passages').textContent = fmt(tot);
+  document.getElementById('tot-pct').textContent      = pct + '%';
+  document.getElementById('tot-btob').textContent     = fmt(tBtob);
+  document.getElementById('tot-btoc').textContent     = fmt(tBtoc);
+  document.getElementById('global-bar').style.width   = pct + '%';
+}
+
+function resetAll() {
+  SALLES.forEach(s => {
+    state[s.id] = 100;
+    document.getElementById(`sl-${s.id}`).value = 100;
+    updateSalle(s);
+  });
+  updateTotals();
+}
+</script>
+</body>
+</html>
