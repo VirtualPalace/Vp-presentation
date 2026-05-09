@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VirtualPalace — Simulateur Chapitre III</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #E8E0D0; color: #0B2A3C; padding: 2rem; }
+
+  /* HEADER */
+  .vp-header { background: #0B2A3C; border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: baseline; }
+  .vp-title { font-size: 20px; font-weight: bold; color: #FFFFFF; }
+  .vp-tag { font-size: 10px; color: #F0B429; letter-spacing: 0.1em; font-weight: bold; }
+  .vp-sub { font-size: 12px; color: #8AAABB; margin-top: 4px; }
+
+  /* TOTAUX GLOBAUX */
+  .totaux { background: #0B2A3C; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .tot-item .tot-label { font-size: 10px; color: #8AAABB; letter-spacing: 0.04em; margin-bottom: 4px; text-transform: uppercase; }
+  .tot-item .tot-val { font-size: 22px; font-weight: bold; }
+  .tot-item .tot-val.gold   { color: #F0B429; }
+  .tot-item .tot-val.white  { color: #FFFFFF; }
+  .tot-item .tot-val.blue   { color: #2FA4D9; }
+  .tot-item .tot-val.green  { color: #7DC247; }
+  .tot-item .tot-val.amber  { color: #EF9F27; }
+
+  /* CURSEURS GLOBAUX */
+  .global-sliders { background: #1E4F6E; border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .gs-title { font-size: 11px; color: #8AAABB; letter-spacing: 0.08em; margin-bottom: 10px; font-weight: bold; }
+  .gs-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .gs-item label { font-size: 11px; color: #AACCEE; display: block; margin-bottom: 4px; }
+  .gs-item input[type=range] { width: 100%; accent-color: #F0B429; }
+  .gs-item .gs-val { font-size: 14px; font-weight: bold; color: #F0B429; text-align: right; }
+  .gs-note { font-size: 10px; color: #6688AA; margin-top: 6px; }
+
+  /* GRILLE SALLES */
+  .salles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+
+  .salle-card { background: #FFFFFF; border-radius: 10px; padding: 1rem 1.25rem; border-left: 4px solid #ccc; }
+  .salle-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
+  .salle-nom { font-size: 13px; font-weight: bold; color: #0B2A3C; }
+  .salle-pl { font-size: 11px; color: #8AAABB; }
+  .salle-loc { font-size: 11px; color: #8AAABB; margin-bottom: 10px; }
+
+  /* Curseurs par salle */
+  .curseurs { margin-bottom: 10px; }
+  .cur-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .cur-label { font-size: 10px; color: #8AAABB; width: 72px; flex-shrink: 0; }
+  .cur-row input[type=range] { flex: 1; height: 3px; cursor: pointer; }
+  .cur-val { font-size: 12px; font-weight: bold; width: 60px; text-align: right; flex-shrink: 0; }
+
+  /* Stats salle */
+  .salle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 8px; border-top: 1px solid #E8E0D0; }
+  .stat-item .stat-label { font-size: 10px; color: #8AAABB; margin-bottom: 2px; }
+  .stat-item .stat-val { font-size: 13px; font-weight: bold; }
+  .sv-btob  { color: #185FA5; }
+  .sv-btoc  { color: #3B6D11; }
+  .sv-ca    { color: #C9A84C; }
+  .sv-total { color: #0B2A3C; }
+
+  /* TABLEAU SCÉNARIOS */
+  .scenarios { background: #FFFFFF; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .sc-title { font-size: 12px; font-weight: bold; color: #0B2A3C; margin-bottom: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: #0B2A3C; }
+  thead th { color: #2FA4D9; font-size: 10px; letter-spacing: 0.06em; padding: 6px 10px; text-align: right; }
+  thead th:first-child { text-align: left; }
+  tbody tr { border-bottom: 1px solid #E8E0D0; }
+  tbody td { padding: 6px 10px; text-align: right; color: #0B2A3C; }
+  tbody td:first-child { text-align: left; font-weight: bold; }
+  tbody tr.current-row { background: #FAEEDA; }
+  tbody tr:last-child { background: #0B2A3C; }
+  tbody tr:last-child td { color: #F0B429; font-weight: bold; }
+  tbody tr:last-child td:first-child { color: #FFFFFF; }
+
+  /* BOUTONS */
+  .btn-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+  .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-reset { background: #185FA5; color: white; }
+  .btn-reset:hover { background: #0C447C; }
+  .btn-scenario { background: #3B6D11; color: white; }
+  .btn-scenario:hover { background: #274A0C; }
+
+  .note { font-size: 11px; color: #8AAABB; text-align: center; margin-top: 0.5rem; }
+
+  /* Barre progression */
+  .pct-bar-wrap { height: 3px; background: #E8E0D0; border-radius: 2px; margin-bottom: 8px; }
+  .pct-bar-fill { height: 3px; border-radius: 2px; transition: width 0.2s; }
+</style>
+</head>
+<body>
+
+<div class="vp-header">
+  <div>
+    <div class="vp-title">Simulateur — Chapitre III · Capacité & Revenus</div>
+    <div class="vp-sub">Jauge · Prix BtoB · Prix BtoC · CA théorique par salle · Jauge 100% = capacité maximale</div>
+  </div>
+  <span class="vp-tag">VIRTUALPALACE · BRUXELLES</span>
+</div>
+
+<!-- TOTAUX -->
+<div class="totaux">
+  <div class="tot-item">
+    <div class="tot-label">CA théorique / an</div>
+    <div class="tot-val gold" id="tot-ca">—</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">Passages / an</div>
+    <div class="tot-val white" id="tot-passages">76 922</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">Jauge globale</div>
+    <div class="tot-val amber" id="tot-jauge">100%</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">CA BtoB</div>
+    <div class="tot-val blue" id="tot-ca-btob">—</div>
+  </div>
+  <div class="tot-item">
+    <div class="tot-label">CA BtoC</div>
+    <div class="tot-val green" id="tot-ca-btoc">—</div>
+  </div>
+</div>
+
+<!-- CURSEURS GLOBAUX -->
+<div class="global-sliders">
+  <div class="gs-title">CURSEURS GLOBAUX — s'appliquent à toutes les salles · ajustables salle par salle ci-dessous</div>
+  <div class="gs-grid">
+    <div class="gs-item">
+      <label>Jauge globale</label>
+      <input type="range" id="g-jauge" min="0" max="100" step="5" value="100" oninput="applyGlobal('jauge',this.value)">
+      <div class="gs-val" id="gv-jauge">100%</div>
+      <div class="gs-note">0% = fermé · 100% = jauge pleine</div>
+    </div>
+    <div class="gs-item">
+      <label>Prix BtoB — forfait salle</label>
+      <input type="range" id="g-btob" min="0" max="1500" step="50" value="0" oninput="applyGlobal('btob',this.value)">
+      <div class="gs-val" id="gv-btob">défaut par salle</div>
+      <div class="gs-note">Base Chap.1 : 500–900 € · 0 = prix par défaut</div>
+    </div>
+    <div class="gs-item">
+      <label>Prix BtoC — par personne</label>
+      <input type="range" id="g-btoc" min="0" max="100" step="5" value="0" oninput="applyGlobal('btoc',this.value)">
+      <div class="gs-val" id="gv-btoc">défaut par salle</div>
+      <div class="gs-note">Base Chap.1 : 15–50 € · 0 = prix par défaut</div>
+    </div>
+  </div>
+</div>
+
+<!-- SALLES -->
+<div class="salles-grid" id="salles-grid"></div>
+
+<div class="btn-row">
+  <button class="btn btn-reset" onclick="resetAll()">Réinitialiser</button>
+  <button class="btn btn-scenario" onclick="applyScenario(60,650,28)">Scénario réaliste (60% · 650€ · 28€)</button>
+  <button class="btn btn-scenario" onclick="applyScenario(80,750,33)">Scénario cible (80% · 750€ · 33€)</button>
+</div>
+
+<!-- TABLEAU SCÉNARIOS -->
+<div class="scenarios">
+  <div class="sc-title">Scénarios de référence — prix moyens Chapitre 1</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Scénario</th>
+        <th>Jauge</th>
+        <th>Passages</th>
+        <th>CA BtoB</th>
+        <th>CA BtoC</th>
+        <th>CA Total</th>
+      </tr>
+    </thead>
+    <tbody id="scenario-table">
+    </tbody>
+  </table>
+</div>
+
+<p class="note">VirtualPalace · Maison du Cinéma et des Nouvelles Images · Rue Royale 290 · 1210 Saint-Josse · Bruxelles · Chapitre III · Version mai 2026</p>
+<p class="note" style="margin-top:4px">CA théorique · jauge 100% · hors charges · hors TVA</p>
+
+<script>
+const SALLES = [
+  { id:'dcp',     nom:'Rétine DCP Cinéma',        loc:'Écurie · R+1',           pl:30,  btob100:10380, btoc100:10950, prix_btob:750,  prix_btoc:29, color:'#185FA5' },
+  { id:'gaumont', nom:'Rétine Héritage Gaumont',   loc:'Hôtel de Maître · R+2',  pl:14,  btob100:4844,  btoc100:5110,  prix_btob:500,  prix_btoc:33, color:'#7A5A1E' },
+  { id:'stream',  nom:'Rétine Streaming',           loc:'Hôtel de Maître · R+2',  pl:36,  btob100:12456, btoc100:13140, prix_btob:750,  prix_btoc:24, color:'#3B6D11' },
+  { id:'vr1',     nom:'Rétine VR 360° — Salle 01', loc:'Hôtel de Maître · R+1',  pl:10,  btob100:3460,  btoc100:3650,  prix_btob:900,  prix_btoc:39, color:'#1E4F6E' },
+  { id:'vr2',     nom:'Rétine VR 360° — Salle 02', loc:'Hôtel de Maître · R+1',  pl:12,  btob100:4152,  btoc100:4380,  prix_btob:900,  prix_btoc:39, color:'#1E4F6E' },
+  { id:'drive',   nom:'Drive-Vigne · Clos',         loc:'Cour intérieure · Été',  pl:40,  btob100:2200,  btoc100:2200,  prix_btob:500,  prix_btoc:15, color:'#3B6D11' },
+];
+
+// State par salle
+const state = {};
+SALLES.forEach(s => {
+  state[s.id] = { jauge: 100, prix_btob: s.prix_btob, prix_btoc: s.prix_btoc };
+});
+
+function fmt(n) { return Math.round(n).toLocaleString('fr-FR'); }
+function fmtEur(n) { return Math.round(n).toLocaleString('fr-FR') + ' €'; }
+
+// Calcul CA pour une salle
+function calcSalle(salle) {
+  const st = state[salle.id];
+  const pct = st.jauge / 100;
+  const passages_btob = Math.round(salle.btob100 * pct);
+  const passages_btoc = Math.round(salle.btoc100 * pct);
+  // BtoB : forfait salle × nombre de séances
+  const seances_btob = Math.round(346 * pct); // 346 créneaux/an à 100%
+  const ca_btob = seances_btob * st.prix_btob;
+  // BtoC : passages × prix/personne
+  const ca_btoc = passages_btoc * st.prix_btoc;
+  return { passages_btob, passages_btoc, ca_btob, ca_btoc,
+           passages_total: passages_btob + passages_btoc,
+           ca_total: ca_btob + ca_btoc };
+}
+
+// Build cards
+const grid = document.getElementById('salles-grid');
+SALLES.forEach(salle => {
+  const card = document.createElement('div');
+  card.className = 'salle-card';
+  card.style.borderLeftColor = salle.color;
+  card.innerHTML = `
+    <div class="salle-top">
+      <span class="salle-nom">${salle.nom}</span>
+      <span class="salle-pl">${salle.pl} pl. max</span>
+    </div>
+    <div class="salle-loc">${salle.loc}</div>
+    <div class="curseurs">
+      <div class="cur-row">
+        <span class="cur-label">Jauge</span>
+        <input type="range" min="0" max="100" step="5" value="100" id="j-${salle.id}"
+          style="accent-color:${salle.color}"
+          oninput="setState('${salle.id}','jauge',this.value)">
+        <span class="cur-val" id="jv-${salle.id}" style="color:${salle.color};width:80px">100% · ${salle.pl} pl.</span>
+      </div>
+      <div class="pct-bar-wrap"><div class="pct-bar-fill" id="jb-${salle.id}" style="width:100%;background:${salle.color}"></div></div>
+      <div class="cur-row">
+        <span class="cur-label">BtoB / séance</span>
+        <input type="range" min="0" max="1500" step="50" value="${salle.prix_btob}" id="pb-${salle.id}"
+          style="accent-color:#185FA5"
+          oninput="setState('${salle.id}','prix_btob',this.value)">
+        <span class="cur-val sv-btob" id="pbv-${salle.id}">${fmt(salle.prix_btob)} €</span>
+      </div>
+      <div class="cur-row">
+        <span class="cur-label">BtoC / pers.</span>
+        <input type="range" min="0" max="100" step="5" value="${salle.prix_btoc}" id="pc-${salle.id}"
+          style="accent-color:#3B6D11"
+          oninput="setState('${salle.id}','prix_btoc',this.value)">
+        <span class="cur-val sv-btoc" id="pcv-${salle.id}">${fmt(salle.prix_btoc)} €</span>
+      </div>
+    </div>
+    <div class="salle-stats">
+      <div class="stat-item"><div class="stat-label">CA BtoB</div><div class="stat-val sv-btob" id="ca-btob-${salle.id}">—</div></div>
+      <div class="stat-item"><div class="stat-label">CA BtoC</div><div class="stat-val sv-btoc" id="ca-btoc-${salle.id}">—</div></div>
+      <div class="stat-item"><div class="stat-label">CA Total</div><div class="stat-val sv-ca" id="ca-tot-${salle.id}">—</div></div>
+    </div>
+  `;
+  grid.appendChild(card);
+});
+
+function setState(id, key, val) {
+  state[id][key] = parseFloat(val);
+  const salle = SALLES.find(s => s.id === id);
+  // Update display
+  if(key === 'jauge') {
+    const plEff = Math.round(salle.pl * parseInt(val) / 100);
+  document.getElementById(`jv-${id}`).textContent = val + '% · ' + plEff + ' pl.';
+    document.getElementById(`jb-${id}`).style.width = val + '%';
+  } else if(key === 'prix_btob') {
+    document.getElementById(`pbv-${id}`).textContent = fmt(val) + ' €';
+  } else if(key === 'prix_btoc') {
+    document.getElementById(`pcv-${id}`).textContent = fmt(val) + ' €';
+  }
+  updateSalle(salle);
+  updateTotals();
+}
+
+function updateSalle(salle) {
+  const r = calcSalle(salle);
+  document.getElementById(`ca-btob-${salle.id}`).textContent = fmtEur(r.ca_btob);
+  document.getElementById(`ca-btoc-${salle.id}`).textContent = fmtEur(r.ca_btoc);
+  document.getElementById(`ca-tot-${salle.id}`).textContent  = fmtEur(r.ca_total);
+}
+
+function updateTotals() {
+  let tPassages=0, tCaBtob=0, tCaBtoc=0;
+  SALLES.forEach(s => {
+    const r = calcSalle(s);
+    tPassages += r.passages_total;
+    tCaBtob   += r.ca_btob;
+    tCaBtoc   += r.ca_btoc;
+  });
+  const tot = tCaBtob + tCaBtoc;
+  const pct = Math.round(tPassages / 76922 * 100);
+  document.getElementById('tot-ca').textContent       = fmtEur(tot);
+  document.getElementById('tot-passages').textContent = fmt(tPassages);
+  document.getElementById('tot-jauge').textContent    = pct + '%';
+  document.getElementById('tot-ca-btob').textContent  = fmtEur(tCaBtob);
+  document.getElementById('tot-ca-btoc').textContent  = fmtEur(tCaBtoc);
+}
+
+function applyGlobal(key, val) {
+  if(key === 'jauge') {
+    document.getElementById('gv-jauge').textContent = val + '%';
+    if(parseInt(val) > 0) {
+      SALLES.forEach(s => {
+        state[s.id].jauge = parseInt(val);
+        document.getElementById(`j-${s.id}`).value = val;
+        document.getElementById(`jv-${s.id}`).textContent = val + '%';
+        document.getElementById(`jb-${s.id}`).style.width = val + '%';
+        updateSalle(s);
+      });
+    }
+  } else if(key === 'btob') {
+    const v = parseInt(val);
+    document.getElementById('gv-btob').textContent = v > 0 ? fmtEur(v) : 'défaut par salle';
+    if(v > 0) {
+      SALLES.forEach(s => {
+        state[s.id].prix_btob = v;
+        document.getElementById(`pb-${s.id}`).value = v;
+        document.getElementById(`pbv-${s.id}`).textContent = fmtEur(v);
+        updateSalle(s);
+      });
+    }
+  } else if(key === 'btoc') {
+    const v = parseInt(val);
+    document.getElementById('gv-btoc').textContent = v > 0 ? fmtEur(v) : 'défaut par salle';
+    if(v > 0) {
+      SALLES.forEach(s => {
+        state[s.id].prix_btoc = v;
+        document.getElementById(`pc-${s.id}`).value = v;
+        document.getElementById(`pcv-${s.id}`).textContent = fmtEur(v);
+        updateSalle(s);
+      });
+    }
+  }
+  updateTotals();
+}
+
+function applyScenario(jauge, btob, btoc) {
+  SALLES.forEach(s => {
+    state[s.id].jauge     = jauge;
+    state[s.id].prix_btob = btob;
+    state[s.id].prix_btoc = btoc;
+    document.getElementById(`j-${s.id}`).value  = jauge;
+    document.getElementById(`pb-${s.id}`).value = btob;
+    document.getElementById(`pc-${s.id}`).value = btoc;
+    document.getElementById(`jv-${s.id}`).textContent  = jauge + '%';
+    document.getElementById(`jb-${s.id}`).style.width  = jauge + '%';
+    document.getElementById(`pbv-${s.id}`).textContent = fmtEur(btob);
+    document.getElementById(`pcv-${s.id}`).textContent = fmtEur(btoc);
+    updateSalle(s);
+  });
+  updateTotals();
+}
+
+function resetAll() {
+  SALLES.forEach(s => {
+    state[s.id] = { jauge: 100, prix_btob: s.prix_btob, prix_btoc: s.prix_btoc };
+    document.getElementById(`j-${s.id}`).value  = 100;
+    document.getElementById(`pb-${s.id}`).value = s.prix_btob;
+    document.getElementById(`pc-${s.id}`).value = s.prix_btoc;
+    document.getElementById(`jv-${s.id}`).textContent  = '100% · ' + s.pl + ' pl.';
+    document.getElementById(`jb-${s.id}`).style.width  = '100%';
+    document.getElementById(`pbv-${s.id}`).textContent = fmtEur(s.prix_btob);
+    document.getElementById(`pcv-${s.id}`).textContent = fmtEur(s.prix_btoc);
+    updateSalle(s);
+  });
+  document.getElementById('g-jauge').value = 100;
+  document.getElementById('g-btob').value  = 0;
+  document.getElementById('g-btoc').value  = 0;
+  document.getElementById('gv-jauge').textContent = '100%';
+  document.getElementById('gv-btob').textContent  = 'défaut par salle';
+  document.getElementById('gv-btoc').textContent  = 'défaut par salle';
+  updateTotals();
+}
+
+// Tableau scénarios
+function buildScenarioTable() {
+  const scenarios = [
+    { nom:"Pessimiste", jauge:20, btob:500, btoc:20 },
+    { nom:"Bas",        jauge:40, btob:600, btoc:25 },
+    { nom:"Réaliste",   jauge:60, btob:650, btoc:28 },
+    { nom:"Cible",      jauge:80, btob:750, btoc:33 },
+    { nom:"Jauge 100%", jauge:100,btob:750, btoc:29 },
+  ];
+  const tbody = document.getElementById('scenario-table');
+  scenarios.forEach(sc => {
+    let tPass=0, tCaB=0, tCaC=0;
+    SALLES.forEach(s => {
+      const pct = sc.jauge/100;
+      const seances = Math.round(346*pct);
+      tPass += Math.round((s.btob100+s.btoc100)*pct);
+      tCaB  += seances * sc.btob;
+      tCaC  += Math.round(s.btoc100*pct) * sc.btoc;
+    });
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${sc.nom}</td>
+      <td>${sc.jauge}%</td>
+      <td>${fmt(tPass)}</td>
+      <td>${fmtEur(tCaB)}</td>
+      <td>${fmtEur(tCaC)}</td>
+      <td><strong>${fmtEur(tCaB+tCaC)}</strong></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Init
+SALLES.forEach(s => updateSalle(s));
+updateTotals();
+buildScenarioTable();
+</script>
+
+<!-- PRÉSENTATION DE L'OUTIL -->
+<div style="background:#0B2A3C;border-radius:10px;padding:1.5rem;margin-bottom:1.5rem;">
+  <div style="font-size:10px;color:#F0B429;letter-spacing:0.1em;font-weight:bold;margin-bottom:1rem;">PRÉSENTATION DE L'OUTIL · COMMENT UTILISER LE SIMULATEUR</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:1.5rem;">
+    <div style="background:#1E4F6E;border-radius:8px;padding:1rem;border-left:4px solid #185FA5;">
+      <div style="font-size:10px;color:#2FA4D9;letter-spacing:0.08em;font-weight:bold;margin-bottom:8px;">CURSEUR 1 — FAUTEUILS</div>
+      <div style="font-size:14px;font-weight:bold;color:#FFFFFF;margin-bottom:6px;">De 0 à la capacité max</div>
+      <div style="font-size:12px;color:#8AAABB;line-height:1.5;">Combien de personnes dans cette salle pour cette séance ? Calcule les passages annuels et le CA correspondant.</div>
+      <div style="font-size:11px;color:#2FA4D9;margin-top:8px;font-style:italic;">→ 10 fauteuils sur 30 = 33% de remplissage</div>
+    </div>
+    <div style="background:#1E4F6E;border-radius:8px;padding:1rem;border-left:4px solid #185FA5;">
+      <div style="font-size:10px;color:#2FA4D9;letter-spacing:0.08em;font-weight:bold;margin-bottom:8px;">CURSEUR 2 — PRIX BtoB / SÉANCE</div>
+      <div style="font-size:14px;font-weight:bold;color:#FFFFFF;margin-bottom:6px;">De 0 € à 1 500 €</div>
+      <div style="font-size:12px;color:#8AAABB;line-height:1.5;">Forfait salle corporate par séance. Base Chap.I : 500 € (Gaumont) · 750 € (DCP · Streaming) · 900 € (VR).</div>
+      <div style="font-size:11px;color:#2FA4D9;margin-top:8px;font-style:italic;">→ Mettre à 0 pour simuler une séance 100% BtoC</div>
+    </div>
+    <div style="background:#1E4F6E;border-radius:8px;padding:1rem;border-left:4px solid #3B6D11;">
+      <div style="font-size:10px;color:#7DC247;letter-spacing:0.08em;font-weight:bold;margin-bottom:8px;">CURSEUR 3 — PRIX BtoC / PERSONNE</div>
+      <div style="font-size:14px;font-weight:bold;color:#FFFFFF;margin-bottom:6px;">De 0 € à 100 €</div>
+      <div style="font-size:12px;color:#8AAABB;line-height:1.5;">Prix public par fauteuil selon package d'accueil. Base Chap.I : 15 € (Drive-Vigne) · 29 € (DCP) · 33 € (Gaumont) · 39 € (VR).</div>
+      <div style="font-size:11px;color:#7DC247;margin-top:8px;font-style:italic;">→ Mettre à 0 pour simuler une séance 100% BtoB</div>
+    </div>
+  </div>
+
+  <!-- QR CODE + URL -->
+  <div style="background:#1B3A5C;border-radius:8px;padding:1rem;display:flex;align-items:center;gap:1.5rem;border-top:3px solid #F0B429;">
+    <img src="data:image/png;base64,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" style="width:100px;height:100px;border-radius:6px;" alt="QR Code simulateur" />
+    <div>
+      <div style="font-size:10px;color:#F0B429;letter-spacing:0.1em;font-weight:bold;margin-bottom:6px;">SIMULATEUR INTERACTIF · CHAPITRE III · VIRTUALPALACE</div>
+      <div style="font-size:14px;font-weight:bold;color:#FFFFFF;margin-bottom:8px;">3 curseurs · fauteuils · prix BtoB · prix BtoC · CA théorique en temps réel</div>
+      <div style="background:#0B2A3C;border-radius:4px;padding:6px 12px;display:inline-block;font-size:11px;color:#2FA4D9;font-family:monospace;">
+        virtualpalace.github.io/Vp-presentation/VP-simulateur-chap3.html
+      </div>
+      <div style="font-size:11px;color:#8AAABB;margin-top:8px;font-style:italic;">
+        Scannez le QR code ou tapez l'URL · fonctionne sur mobile · tablette · ordinateur<br>
+        CA affiché : théorique · jauge 100% · hors charges · hors TVA
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VirtualPalace — Calendrier Rétine DCP Cinéma 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #E8E0D0; color: #0B2A3C; padding: 1.5rem; }
+
+  /* HEADER */
+  .header { background: #0B2A3C; border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:center; }
+  .header-left h1 { font-size: 18px; font-weight: bold; color: #FFFFFF; }
+  .header-left p { font-size: 11px; color: #8AAABB; margin-top: 3px; }
+  .header-tag { font-size: 10px; color: #F0B429; letter-spacing: 0.1em; font-weight: bold; }
+
+  /* DASHBOARD */
+  .dashboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .dash-item { background: #0B2A3C; border-radius: 8px; padding: 0.75rem 1rem; }
+  .dash-label { font-size: 10px; color: #8AAABB; letter-spacing: 0.04em; margin-bottom: 4px; text-transform: uppercase; }
+  .dash-val { font-size: 20px; font-weight: bold; }
+  .dv-gold  { color: #F0B429; }
+  .dv-blue  { color: #2FA4D9; }
+  .dv-green { color: #7DC247; }
+  .dv-amber { color: #EF9F27; }
+  .dv-white { color: #FFFFFF; }
+
+  /* JAUGE BAR */
+  .jauge-bar-wrap { background: #1E4F6E; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; }
+  .jauge-bar-label { font-size: 10px; color: #8AAABB; margin-bottom: 6px; letter-spacing: 0.06em; font-weight: bold; }
+  .jauge-bar-track { height: 10px; background: #0B2A3C; border-radius: 5px; overflow: hidden; display: flex; }
+  .jauge-seg { height: 10px; transition: width 0.3s; }
+  .jauge-seg.btob { background: #185FA5; }
+  .jauge-seg.btoc { background: #3B6D11; }
+  .jauge-seg.edit { background: #C9A84C; }
+  .jauge-legend { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; }
+  .jl-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8AAABB; }
+  .jl-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* SALLE SELECTOR */
+  .salle-selector { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .salle-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ccc; background: white; font-size: 12px; cursor: pointer; color: #0B2A3C; transition: all 0.15s; }
+  .salle-btn.active { background: #0B2A3C; color: #F0B429; border-color: #0B2A3C; font-weight: bold; }
+
+  /* NAVIGATION MOIS */
+  .nav-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .nav-btn { background: #0B2A3C; color: white; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+  .nav-btn:hover { background: #1E4F6E; }
+  .nav-month { font-size: 16px; font-weight: bold; color: #0B2A3C; min-width: 180px; text-align: center; }
+  .nav-year { font-size: 13px; color: #8AAABB; }
+  .btn-reset-cal { margin-left: auto; background: #185FA5; color: white; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 12px; }
+
+  /* CALENDRIER */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1.5rem; }
+  .cal-day-header { text-align: center; font-size: 11px; font-weight: bold; color: #8AAABB; padding: 4px 0; letter-spacing: 0.05em; }
+  .cal-day-header.weekend { color: #3B6D11; }
+
+  .day-cell { background: white; border-radius: 6px; padding: 4px; min-height: 80px; border: 1px solid #E0D8CE; cursor: default; }
+  .day-cell.empty { background: transparent; border: none; cursor: default; }
+  .day-cell.past { opacity: 0.5; }
+  .day-num { font-size: 11px; font-weight: bold; color: #0B2A3C; margin-bottom: 3px; }
+  .day-cell.today .day-num { color: #F0B429; }
+  .day-cell.ferie { background: #F5F3F0; }
+  .day-cell.ferie .day-num::after { content: " ★"; font-size: 8px; color: #C9A84C; }
+
+  /* CRÉNEAUX */
+  .slot { border-radius: 3px; padding: 2px 4px; font-size: 9px; font-weight: bold; margin-bottom: 2px; cursor: pointer; text-align: center; transition: opacity 0.15s; white-space: nowrap; overflow: hidden; }
+  .slot:hover { opacity: 0.8; }
+  .slot.libre    { background: #F0EEE8; color: #888; border: 1px dashed #ccc; }
+  .slot.btob     { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
+  .slot.btoc     { background: #EAF3DE; color: #27500A; border: 1px solid #3B6D11; }
+  .slot.editorial{ background: #FBF3E0; color: #633806; border: 1px solid #C9A84C; }
+  .slot.ferme    { background: #F5F3F0; color: #aaa; border: 1px solid #ddd; cursor: default; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #E8E0D0; border-radius: 10px; padding: 1.5rem; min-width: 320px; max-width: 400px; }
+  .modal h3 { font-size: 14px; font-weight: bold; color: #0B2A3C; margin-bottom: 4px; }
+  .modal p { font-size: 12px; color: #8AAABB; margin-bottom: 1rem; }
+  .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .modal-btn { padding: 10px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; }
+  .mb-btob     { background: #185FA5; color: white; }
+  .mb-btoc     { background: #3B6D11; color: white; }
+  .mb-editorial{ background: #C9A84C; color: white; }
+  .mb-libre    { background: #F0EEE8; color: #888; border: 1px solid #ccc; }
+  .mb-cancel   { background: #0B2A3C; color: #8AAABB; grid-column: span 2; }
+  .modal-price { font-size: 11px; color: #8AAABB; margin-top: 4px; }
+
+  /* LÉGENDE SLOTS */
+  .slot-legend { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .sl-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+  .sl-box { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* NOTE */
+  .note { font-size: 11px; color: #8AAABB; text-align: center; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1 id="header-title">Calendrier — Rétine DCP Cinéma · 2026</h1>
+    <p id="header-sub">30 places · Écurie · R+1 · Calendrier théorique · Options de réservation</p>
+  </div>
+  <span class="header-tag">VIRTUALPALACE · CHAPITRE III</span>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+  <div class="dash-item"><div class="dash-label">Créneaux disponibles</div><div class="dash-val dv-white" id="d-total">346</div></div>
+  <div class="dash-item"><div class="dash-label">BtoB optionné</div><div class="dash-val dv-blue" id="d-btob">0</div></div>
+  <div class="dash-item"><div class="dash-label">BtoC optionné</div><div class="dash-val dv-green" id="d-btoc">0</div></div>
+  <div class="dash-item"><div class="dash-label">Éditorial</div><div class="dash-val dv-amber" id="d-edit">0</div></div>
+  <div class="dash-item"><div class="dash-label">CA théorique</div><div class="dash-val dv-gold" id="d-ca">0 €</div></div>
+</div>
+
+<!-- JAUGE -->
+<div class="jauge-bar-wrap">
+  <div class="jauge-bar-label">JAUGE CONSOLIDÉE — <span id="jauge-pct">0%</span> · <span id="jauge-detail">0 créneaux optionnés sur 346</span></div>
+  <div class="jauge-bar-track">
+    <div class="jauge-seg btob" id="jseg-btob" style="width:0%"></div>
+    <div class="jauge-seg btoc" id="jseg-btoc" style="width:0%"></div>
+    <div class="jauge-seg edit" id="jseg-edit" style="width:0%"></div>
+  </div>
+  <div class="jauge-legend">
+    <div class="jl-item"><div class="jl-dot" style="background:#185FA5"></div>BtoB</div>
+    <div class="jl-item"><div class="jl-dot" style="background:#3B6D11"></div>BtoC</div>
+    <div class="jl-item"><div class="jl-dot" style="background:#C9A84C"></div>Éditorial</div>
+    <div class="jl-item"><div class="jl-dot" style="background:#F0EEE8;border:1px solid #ccc"></div>Libre</div>
+  </div>
+</div>
+
+<!-- SALLE SELECTOR -->
+<div class="salle-selector">
+  <span style="font-size:12px;color:#8AAABB;align-self:center;">Salle :</span>
+  <button class="salle-btn active" onclick="setSalle('dcp')">Rétine DCP · 30 pl.</button>
+  <button class="salle-btn" onclick="setSalle('gaumont')">Gaumont · 14 pl.</button>
+  <button class="salle-btn" onclick="setSalle('stream')">Streaming · 36 pl.</button>
+  <button class="salle-btn" onclick="setSalle('vr1')">VR 01 · 10 pl.</button>
+  <button class="salle-btn" onclick="setSalle('vr2')">VR 02 · 12 pl.</button>
+  <button class="salle-btn" onclick="setSalle('drive')">Drive-Vigne · 40 pl.</button>
+</div>
+
+<!-- NAV MOIS -->
+<div class="nav-row">
+  <button class="nav-btn" onclick="prevMonth()">←</button>
+  <span class="nav-month" id="nav-month">Janvier 2026</span>
+  <button class="nav-btn" onclick="nextMonth()">→</button>
+  <button class="btn-reset-cal" onclick="resetCalendar()">Réinitialiser</button>
+</div>
+
+<!-- LÉGENDE -->
+<div class="slot-legend">
+  <div class="sl-item"><div class="sl-box" style="background:#E6F1FB;border:1px solid #185FA5"></div>BtoB — corporate</div>
+  <div class="sl-item"><div class="sl-box" style="background:#EAF3DE;border:1px solid #3B6D11"></div>BtoC — public</div>
+  <div class="sl-item"><div class="sl-box" style="background:#FBF3E0;border:1px solid #C9A84C"></div>Éditorial VP</div>
+  <div class="sl-item"><div class="sl-box" style="background:#F0EEE8;border:1px dashed #ccc"></div>Libre</div>
+  <div class="sl-item"><div class="sl-box" style="background:#F5F3F0;border:1px solid #ddd"></div>Fermé / Férié</div>
+</div>
+
+<!-- CALENDRIER -->
+<div class="cal-grid" id="cal-grid"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Créneau</h3>
+    <p id="modal-sub"></p>
+    <div class="modal-btns">
+      <button class="modal-btn mb-btob" onclick="setSlot('btob')">BtoB Corporate<div class="modal-price" id="mp-btob"></div></button>
+      <button class="modal-btn mb-btoc" onclick="setSlot('btoc')">BtoC Public<div class="modal-price" id="mp-btoc"></div></button>
+      <button class="modal-btn mb-editorial" onclick="setSlot('editorial')">Éditorial VP<div class="modal-price" id="mp-edit"></div></button>
+      <button class="modal-btn mb-libre" onclick="setSlot('libre')">Libérer</button>
+      <button class="modal-btn mb-cancel" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<p class="note">VirtualPalace · Maison du Cinéma et des Nouvelles Images · Rue Royale 290 · 1210 Saint-Josse · Bruxelles · Calendrier théorique 2026 · Options non contractuelles</p>
+
+<script>
+const SALLES = {
+  dcp:    { nom:'Rétine DCP Cinéma',        loc:'Écurie · R+1',          pl:30,  prix_btob:750,  prix_btoc:29,  total_créneaux:346 },
+  gaumont:{ nom:'Rétine Héritage Gaumont',   loc:'Hôtel de Maître · R+2', pl:14,  prix_btob:500,  prix_btoc:33,  total_créneaux:346 },
+  stream: { nom:'Rétine Streaming',           loc:'Hôtel de Maître · R+2', pl:36,  prix_btob:750,  prix_btoc:24,  total_créneaux:346 },
+  vr1:    { nom:'Rétine VR 360° — Salle 01', loc:'Hôtel de Maître · R+1', pl:10,  prix_btob:900,  prix_btoc:39,  total_créneaux:346 },
+  vr2:    { nom:'Rétine VR 360° — Salle 02', loc:'Hôtel de Maître · R+1', pl:12,  prix_btob:900,  prix_btoc:39,  total_créneaux:346 },
+  drive:  { nom:'Drive-Vigne · Clos',         loc:'Cour intérieure · Été', pl:40,  prix_btob:500,  prix_btoc:15,  total_créneaux:55  },
+};
+
+const FERIES_2026 = ['2026-01-01','2026-04-06','2026-05-01','2026-05-14','2026-05-21',
+                     '2026-07-21','2026-08-15','2026-11-01','2026-11-11','2026-12-25'];
+
+const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
+              'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+const SLOTS_LABELS = ['Matin','Après-midi','Soir'];
+
+let currentSalle = 'dcp';
+let currentMonth = 0; // 0 = janvier
+let currentYear  = 2026;
+let selectedSlot = null; // {dateStr, slotIdx}
+
+// State: slots[salle][dateStr][slotIdx] = 'libre'|'btob'|'btoc'|'editorial'|'ferme'
+const state = {};
+Object.keys(SALLES).forEach(id => { state[id] = {}; });
+
+function fmt(n) { return Math.round(n).toLocaleString('fr-FR'); }
+function fmtEur(n) { return fmt(n) + ' €'; }
+
+function dateStr(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function isFerie(ds) { return FERIES_2026.includes(ds); }
+function isWeekend(dow) { return dow === 0 || dow === 6; }
+
+function getSlotDefault(ds, slotIdx) {
+  const d = new Date(ds);
+  const dow = d.getDay();
+  if(isFerie(ds)) return 'ferme';
+  if(dow === 0) { // Dimanche
+    if(slotIdx === 0) return 'libre'; // Petits Déj possible
+    return 'libre';
+  }
+  if(dow === 6) { // Samedi
+    if(slotIdx === 0) return 'libre'; // Visite patrimoniale
+    return 'libre';
+  }
+  // Lun-Ven
+  if(slotIdx === 0 || slotIdx === 1) return 'libre'; // BtoB matin/aprem
+  return 'libre'; // Soir éditorial ou libre
+}
+
+function getSlotState(ds, slotIdx) {
+  if(!state[currentSalle][ds]) return getSlotDefault(ds, slotIdx);
+  if(state[currentSalle][ds][slotIdx] === undefined) return getSlotDefault(ds, slotIdx);
+  return state[currentSalle][ds][slotIdx];
+}
+
+function setSlotState(ds, slotIdx, val) {
+  if(!state[currentSalle][ds]) state[currentSalle][ds] = {};
+  state[currentSalle][ds][slotIdx] = val;
+}
+
+function slotLabel(s) {
+  return { libre:'Libre', btob:'BtoB', btoc:'BtoC', editorial:'Édit.', ferme:'Fermé' }[s] || s;
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // En-têtes jours
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach((d,i) => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-header' + (i>=5?' weekend':'');
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  let startDow = firstDay.getDay(); // 0=dim
+  if(startDow === 0) startDow = 7;
+  startDow -= 1; // 0=lun
+
+  // Cellules vides
+  for(let i=0; i<startDow; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-day empty';
+    grid.appendChild(empty);
+  }
+
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+
+  for(let d=1; d<=daysInMonth; d++) {
+    const ds = dateStr(currentYear, currentMonth, d);
+    const date = new Date(ds);
+    const dow = date.getDay();
+    const ferie = isFerie(ds);
+
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (ferie?' ferie':'');
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'day-num';
+    numDiv.textContent = d;
+    cell.appendChild(numDiv);
+
+    // 3 créneaux par jour
+    SLOTS_LABELS.forEach((label, si) => {
+      const slotState = getSlotState(ds, si);
+      if(slotState === 'ferme') {
+        const s = document.createElement('div');
+        s.className = 'slot ferme';
+        s.textContent = label;
+        cell.appendChild(s);
+        return;
+      }
+      const s = document.createElement('div');
+      s.className = 'slot ' + slotState;
+      s.textContent = slotLabel(slotState) === 'Libre' ? label : slotLabel(slotState);
+      s.title = `${ds} · ${label}`;
+      s.onclick = () => openModal(ds, si, label);
+      cell.appendChild(s);
+    });
+
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('nav-month').textContent = MOIS[currentMonth] + ' ' + currentYear;
+  document.getElementById('header-title').textContent = `Calendrier — ${SALLES[currentSalle].nom} · 2026`;
+  document.getElementById('header-sub').textContent = `${SALLES[currentSalle].pl} places · ${SALLES[currentSalle].loc} · Calendrier théorique · Options de réservation`;
+  updateDashboard();
+}
+
+function openModal(ds, slotIdx, label) {
+  const d = new Date(ds);
+  const dow = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d.getDay()];
+  const salle = SALLES[currentSalle];
+  document.getElementById('modal-title').textContent = `${dow} ${ds.split('-')[2]} ${MOIS[parseInt(ds.split('-')[1])-1]} · ${label}`;
+  document.getElementById('modal-sub').textContent = `${salle.nom} · ${salle.pl} places`;
+  document.getElementById('mp-btob').textContent = `${salle.prix_btob} € / séance`;
+  document.getElementById('mp-btoc').textContent = `${salle.prix_btoc} € / pers.`;
+  document.getElementById('mp-edit').textContent = `Créneau éditorial VP`;
+  selectedSlot = { ds, slotIdx };
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  selectedSlot = null;
+}
+
+function setSlot(type) {
+  if(!selectedSlot) return;
+  setSlotState(selectedSlot.ds, selectedSlot.slotIdx, type);
+  closeModal();
+  renderCalendar();
+}
+
+function updateDashboard() {
+  let nBtob=0, nBtoc=0, nEdit=0, ca=0;
+  const salle = SALLES[currentSalle];
+
+  Object.keys(state[currentSalle]).forEach(ds => {
+    const day = state[currentSalle][ds];
+    Object.keys(day).forEach(si => {
+      const v = day[si];
+      if(v === 'btob')     { nBtob++; ca += salle.prix_btob; }
+      if(v === 'btoc')     { nBtoc++; ca += salle.prix_btoc * salle.pl; }
+      if(v === 'editorial'){ nEdit++; ca += salle.prix_btoc * salle.pl; }
+    });
+  });
+
+  const total = salle.total_créneaux;
+  const opted = nBtob + nBtoc + nEdit;
+  const pct = Math.round(opted / total * 100);
+
+  document.getElementById('d-total').textContent = total - opted;
+  document.getElementById('d-btob').textContent  = nBtob;
+  document.getElementById('d-btoc').textContent  = nBtoc;
+  document.getElementById('d-edit').textContent  = nEdit;
+  document.getElementById('d-ca').textContent    = fmtEur(ca);
+  document.getElementById('jauge-pct').textContent = pct + '%';
+  document.getElementById('jauge-detail').textContent = `${opted} créneaux optionnés sur ${total}`;
+
+  document.getElementById('jseg-btob').style.width = (nBtob/total*100) + '%';
+  document.getElementById('jseg-btoc').style.width = (nBtoc/total*100) + '%';
+  document.getElementById('jseg-edit').style.width = (nEdit/total*100) + '%';
+}
+
+function prevMonth() {
+  if(currentMonth === 0) { currentMonth = 11; currentYear--; }
+  else currentMonth--;
+  renderCalendar();
+}
+
+function nextMonth() {
+  if(currentMonth === 11) { currentMonth = 0; currentYear++; }
+  else currentMonth++;
+  renderCalendar();
+}
+
+function setSalle(id) {
+  currentSalle = id;
+  document.querySelectorAll('.salle-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  currentMonth = 0;
+  currentYear = 2026;
+  renderCalendar();
+}
+
+function resetCalendar() {
+  state[currentSalle] = {};
+  renderCalendar();
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if(e.target === this) closeModal();
+});
+
+renderCalendar();
+</script>
+</body>
+</html>
